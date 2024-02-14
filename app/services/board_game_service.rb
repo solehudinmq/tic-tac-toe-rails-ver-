@@ -30,7 +30,12 @@ class BoardGameService
 
     def step(x, y)
         board = @redis.get("active_game")
-        parse_board = JSON.parse(board)["boards"]
+        parse_data =  JSON.parse(board)
+        parse_board = parse_data["boards"]
+
+        if parse_data["winner"]
+            return parse_data
+        end
 
         select_step = parse_board[x][y]
         result = { boards: parse_board, winner: nil }
@@ -77,24 +82,23 @@ class BoardGameService
         end
 
         def player_1_win(parse_board)
-            if ( parse_board[0] || parse_board[1] || parse_board[2] ) == ['X', 'X', 'X'] || 
-                ( parse_board[0][0] == 'X' && parse_board[1][0] == 'X' && parse_board[2][0] == 'X' ) ||
-                ( parse_board[1][0] == 'X' && parse_board[1][1] == 'X' && parse_board[2][1] == 'X' ) ||
-                ( parse_board[2][0] == 'X' && parse_board[2][1] == 'X' && parse_board[2][2] == 'X' ) ||
-                ( parse_board[0][0] == 'X' && parse_board[1][1] == 'X' && parse_board[2][2] == 'X' ) ||
-                ( parse_board[2][0] == 'X' && parse_board[1][1] == 'X' && parse_board[0][2] == 'X' )
-                return 1
-            end
+            return 1 if player_win(parse_board, 'X')
         end
 
         def player_2_win(parse_board)
-            if ( parse_board[0] || parse_board[1] || parse_board[2] ) == ['O', 'O', 'O'] || 
-                ( parse_board[0][0] == 'O' && parse_board[1][0] == 'O' && parse_board[2][0] == 'O' ) ||
-                ( parse_board[1][0] == 'O' && parse_board[1][1] == 'O' && parse_board[2][1] == 'O' ) ||
-                ( parse_board[2][0] == 'O' && parse_board[2][1] == 'O' && parse_board[2][2] == 'O' ) ||
-                ( parse_board[0][0] == 'O' && parse_board[1][1] == 'O' && parse_board[2][2] == 'O' ) ||
-                ( parse_board[2][0] == 'O' && parse_board[1][1] == 'O' && parse_board[0][2] == 'O' )
-                return 2
+            return 2 if player_win(parse_board, 'O')
+        end
+
+        def player_win(parse_board, player_sign)
+            if ( parse_board[0] || parse_board[1] || parse_board[2] ) == [player_sign, player_sign, player_sign] || 
+                ( parse_board[0][0] == player_sign && parse_board[1][0] == player_sign && parse_board[2][0] == player_sign ) ||
+                ( parse_board[1][0] == player_sign && parse_board[1][1] == player_sign && parse_board[2][1] == player_sign ) ||
+                ( parse_board[2][0] == player_sign && parse_board[2][1] == player_sign && parse_board[2][2] == player_sign ) ||
+                ( parse_board[0][0] == player_sign && parse_board[1][1] == player_sign && parse_board[2][2] == player_sign ) ||
+                ( parse_board[2][0] == player_sign && parse_board[1][1] == player_sign && parse_board[0][2] == player_sign )
+                return true
             end
+
+            false
         end
 end
