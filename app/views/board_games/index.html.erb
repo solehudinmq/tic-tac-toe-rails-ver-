@@ -1,0 +1,206 @@
+<style>
+    table, th, td {
+        border:1px solid black;
+        text-align: center;
+    }
+
+    #active-game {
+        display: none;
+    }
+
+    #player-info {
+        width:50%;
+        height:100px;
+    }
+
+    #my-board {
+        width:900px;
+        height:600px;
+        table-layout:fixed;
+    }
+
+    #my-board tr {
+        height:200px;
+    }
+
+    #reset {
+        display: none;
+    }
+</style>
+
+<form id="myForm">
+  Name: <input type="text" id="name" name="name"><br><br>
+  <input type="button" onclick="setName()" value="Submit">
+</form>
+
+
+<div id="active-game">
+    <hr>
+    <h1>Welcome to Tic-Tac-Toe</h1>
+    <hr>
+    <table id="player-info">
+        <tr>
+            <td><b>Name :</b></td>
+            <td id="active-name"></td>
+        </tr>
+        <tr>
+            <td><b>Player :</b></td>
+            <td id="active-player"></td>
+        </tr>
+        <tr>
+            <td><b>Score :</b></td>
+            <td id="active-score"></td>
+        </tr>
+    </table>
+    <hr>
+    <table id="my-board">
+        <tr>
+            <td id="AD" onclick="move(this)"></td>
+            <td id="AE" onclick="move(this)"></td>
+            <td id="AF" onclick="move(this)"></td>
+        </tr>
+        <tr>
+            <td id="BD" onclick="move(this)"></td>
+            <td id="BE" onclick="move(this)"></td>
+            <td id="BF" onclick="move(this)"></td>
+        </tr>
+        <tr>
+            <td id="CD" onclick="move(this)"></td>
+            <td id="CE" onclick="move(this)"></td>
+            <td id="CF" onclick="move(this)"></td>
+        </tr>
+    </table>
+    <hr>
+    
+    <a href="/" id="reset">
+        <button>Reset</button>
+    </a> 
+</div>
+
+  <script>
+    function move(me) {
+        if (me.textContent == '') {
+            fetch('/board_games/turn_now', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then((response) => response.json())
+            .then((result) => {
+                if (result.data.player == 1) {
+                    let isCallApi = true;
+                    let x;
+                    let y;
+                    switch (me.id) {
+                        case 'AD':
+                            x = 0;
+                            y = 0;
+                            break;
+                        case 'AE':
+                            x = 0;
+                            y = 1;
+                            break;
+                        case 'AF':
+                            x = 0;
+                            y = 2;
+                            break;
+                        case 'BD':
+                            x = 1;
+                            y = 0;
+                            break;
+                        case 'BE':
+                            x = 1;
+                            y = 1;
+                            break;
+                        case 'BF':
+                            x = 1;
+                            y = 2;
+                            break;
+                        case 'CD': 
+                            x = 2;
+                            y = 0;
+                            break;
+                        case 'CE':
+                            x = 2;
+                            y = 1;
+                            break;
+                        case 'CF':
+                            x = 2;
+                            y = 2;
+                            break;
+                        default:
+                            isCallApi = false;
+                            break;
+                    }
+
+                    if (isCallApi) {
+                        fetch('/board_games/step', {
+                            method: 'PATCH',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ "board_games": { "x": x, "y": y } })
+                        })
+                        .then((response) => response.json())
+                        .then((result) => {
+                            var boards = result.data.boards;
+                            
+                            document.getElementById('AD').innerHTML = boards[0][0];
+                            document.getElementById('AE').innerHTML = boards[0][1];
+                            document.getElementById('AF').innerHTML = boards[0][2];
+                            document.getElementById('BD').innerHTML = boards[1][0];
+                            document.getElementById('BE').innerHTML = boards[1][1];
+                            document.getElementById('BF').innerHTML = boards[1][2];
+                            document.getElementById('CD').innerHTML = boards[2][0];
+                            document.getElementById('CE').innerHTML = boards[2][1];
+                            document.getElementById('CF').innerHTML = boards[2][2];
+
+                            let winnerMessage = null;
+                            if (result.data.winner == 1) {
+                                var latestScore = Number(document.getElementById('active-score').innerHTML);
+                                document.getElementById('active-score').innerHTML = latestScore + 10;
+                               
+                                winnerMessage = 'Player 1 wins!';
+                            } else if (result.data.winner == 2) {
+                                var latestScore = Number(document.getElementById('active-score').innerHTML);
+                                document.getElementById('active-score').innerHTML = latestScore - 10;
+                               
+                                winnerMessage = 'Player 2 wins!';
+                            }
+
+                            if (winnerMessage) {
+                                alert(winnerMessage);
+                                document.getElementById('reset').style.display = 'block';
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    function setName() {
+        document.getElementById('active-game').style.display = 'block';
+        var name = document.getElementById('name').value;
+
+        fetch('/board_games/start', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ "board_games": { "name": name } })
+        })
+        .then((response) => response.json())
+        .then((result) => {
+            document.getElementById('active-name').innerHTML = result.data.name;
+            document.getElementById('active-score').innerHTML = result.data.score;
+            document.getElementById('active-player').innerHTML = result.data.player;
+
+            document.getElementById('myForm').style.display = 'none';
+        });
+    }
+  </script>
